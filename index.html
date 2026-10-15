@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Realmforge Idle RPG</title>
+<style>
+:root{--bg:#070a12;--panel:#0e1523;--panel2:#151f31;--line:#30415d;--text:#edf5ff;--muted:#91a4bd;--gold:#f4c95d;--good:#66e39b;--bad:#ff7474;--accent:#7f8cff;--cyan:#55d8ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#263052 0,#080b14 48%);color:var(--text);font-family:system-ui,Segoe UI,sans-serif}body:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 49.8%,#ffffff03 50%,transparent 50.2%),linear-gradient(0deg,transparent 49.8%,#ffffff03 50%,transparent 50.2%);background-size:42px 42px;opacity:.35}
+button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#1b2740;color:var(--text);border-radius:12px;padding:10px 13px}button:hover{filter:brightness(1.12)}button.primary{background:var(--accent);border-color:#9b90ff;color:white}button.gold{background:#4c3b16;border-color:#806322;color:var(--gold)}
+#app{max-width:1100px;margin:auto;padding:14px}.top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px;background:linear-gradient(90deg,#101a2b,#0b111d);border:1px solid var(--line);border-radius:16px;padding:11px 13px}.brand{font-size:24px;font-weight:900;letter-spacing:.8px}.sub{color:var(--cyan);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:linear-gradient(145deg,#111c2e,#0c1421);border:1px solid var(--line);padding:10px;border-radius:12px;position:relative;overflow:hidden}.stat:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);opacity:.45}.stat b{display:block;font-size:18px}.goldText{color:var(--gold)}
+.hero{margin-top:10px;background:radial-gradient(circle at 50% 20%,#1b2a49,#0d1524 62%);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;box-shadow:inset 0 1px #ffffff0a}.enemy{font-size:62px;filter:drop-shadow(0 8px 18px #0008)}.enemyName{font-size:22px;font-weight:800}.bar{height:10px;background:#080b12;border-radius:20px;overflow:hidden;margin:9px 0}.fill{height:100%;background:linear-gradient(90deg,#ff667d,#ffb35c);width:100%;transition:width .25s}
+.actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:10px;margin-top:10px}.panel{background:linear-gradient(145deg,#101a2aee,#0b121ee8);border:1px solid var(--line);border-radius:15px;padding:14px}.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;overflow:auto;margin-bottom:10px}.tabs button{background:#0b1320;border-radius:9px;font-size:12px}.tabs button.active{background:linear-gradient(135deg,#6877ef,#8b7cff);border-color:#9ba4ff;box-shadow:0 0 0 1px #a9adff33}.item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px;background:linear-gradient(90deg,#152239,#101a2a);border:1px solid #2a3a55;border-radius:10px;margin:7px 0}.rarity{font-size:11px;color:#b9c7dd}.eq{color:#8fe7ff}.skill{min-width:130px}.small{font-size:12px;color:var(--muted)}.log{max-height:170px;overflow:auto;font-size:12px;line-height:1.6}.danger{color:var(--bad)}.good{color:var(--good)}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:18px;z-index:5}.modal.open{display:flex}.modalBox{max-width:500px;width:100%;background:#101827;border:1px solid var(--line);border-radius:18px;padding:18px}.modalBox input,.modalBox textarea{width:100%;background:#080d18;color:white;border:1px solid var(--line);border-radius:10px;padding:11px;margin:7px 0}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#18243a;border:1px solid var(--line);padding:10px 14px;border-radius:12px;display:none;z-index:10}
+@media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.brand{font-size:20px}.enemy{font-size:50px}}
+</style>
+
+<style>
+.admin-panel{border:1px solid #8b5cf6;border-radius:14px;padding:14px;margin-top:12px;background:rgba(45,20,80,.28)}
+.admin-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#6d28d9;color:white;font-size:12px;font-weight:700}
+.friend-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid #31405d;border-radius:10px;margin:7px 0;background:rgba(10,16,28,.65)}
+.friend-online{font-size:11px}
+</style>
+
+<style>
+/* Realmforge tab upgrade: polished, compact fantasy inventory panels */
+:root{--panel-glow:#7c8cff;--rare:#b78cff;--epic:#ff91cf}
+.tabs{gap:7px;padding:5px;background:#070d18;border:1px solid #263550;border-radius:14px;grid-template-columns:repeat(5,minmax(88px,1fr))}
+.tabs button{min-height:46px;padding:8px 6px;border:1px solid transparent;background:linear-gradient(180deg,#121d30,#0b1220);color:#b8c8df;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;font-weight:750;white-space:nowrap}
+.tabs button:hover{transform:translateY(-1px);border-color:#536b98}
+.tabs button.active{color:#fff;background:linear-gradient(135deg,#6877ef 0%,#755eea 52%,#a15df4 100%);border-color:#b4b9ff;box-shadow:0 5px 18px #665bff3b,inset 0 1px #ffffff55}
+#tabContent{min-height:245px;animation:tabIn .2s ease-out}
+@keyframes tabIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+#tabContent h3{display:flex;align-items:center;gap:8px;font-size:19px;margin:8px 0 4px;letter-spacing:.2px}
+#tabContent h3:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,#5066a5aa,transparent);margin-left:4px}
+#tabContent h4{margin:18px 0 8px;color:#c8d6ff}
+#tabContent .item{position:relative;overflow:hidden;padding:12px;margin:9px 0;border-color:#2b3e5d;background:linear-gradient(115deg,#172641,#101a2b 68%,#101827);box-shadow:inset 0 1px #ffffff08;transition:border-color .16s ease,transform .16s ease,background .16s ease}
+#tabContent .item:hover{border-color:#6178aa;transform:translateY(-1px);background:linear-gradient(115deg,#1b2c4b,#121f33 68%,#101827)}
+#tabContent .item b{overflow-wrap:anywhere}
+#tabContent .item button{font-weight:750;font-size:12px;white-space:nowrap;border-radius:10px;background:linear-gradient(180deg,#263a5c,#192842);border-color:#415b85}
+#tabContent .item button.primary{background:linear-gradient(135deg,#6678f4,#9568ed);border-color:#b0a4ff}
+#tabContent .item button:disabled{opacity:.55;filter:grayscale(.4)}
+#tabContent .rarity{margin-top:3px;line-height:1.45;color:#9eafc9}
+#tabContent .bar{height:11px;border:1px solid #30415f;background:#070c16}
+#tabContent .fill{background:linear-gradient(90deg,#5bdcff,#8b7cff,#c17bff);box-shadow:0 0 12px #6f7cff88}
+.inventory-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.inventory-stat{padding:10px 8px;text-align:center;border-radius:12px;border:1px solid #34476b;background:radial-gradient(circle at 50% 0,#26385b,#101a2b 75%)}
+.inventory-stat strong{display:block;font-size:17px;color:#eef3ff}
+.inventory-stat span{display:block;color:#9eb0cb;font-size:10px;letter-spacing:.8px;text-transform:uppercase;margin-top:3px}
+.inventory-item{min-height:78px}
+.inventory-item:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#6f83ff}
+.inventory-item.rarity-common:before{background:#9aacc6}.inventory-item.rarity-rare:before{background:#4ddcff}.inventory-item.rarity-epic:before{background:#b58aff}.inventory-item.rarity-legendary:before{background:linear-gradient(#ffdf70,#ff8b50)}
+.empty-state{padding:24px 14px;text-align:center;border:1px dashed #3a4e70;border-radius:14px;color:#a7b8d3;background:#0b1422}
+.empty-state .empty-icon{font-size:34px;margin-bottom:8px}
+.achievement-card{border-left:3px solid #435879!important}.achievement-card.is-done{border-left-color:#62e5a1!important;background:linear-gradient(100deg,#12372c,#101c2c 70%)!important}
+.skill-card{background:linear-gradient(115deg,#182742,#101827)!important;border-color:#354b70!important;box-shadow:inset 0 1px #ffffff08}
+@media(max-width:520px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.tabs button{font-size:11px;min-height:42px}.inventory-summary{gap:5px}.inventory-stat{padding:8px 4px}.inventory-stat strong{font-size:15px}#tabContent .item{padding:10px;gap:6px}}
+
+/* Spellbook expansion: animated rune cards, rarity schools, mobile-friendly grid */
+.spellbook-banner{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:5px;margin:12px 0 14px;padding:17px;border:1px solid #6758a8;border-radius:15px;background:radial-gradient(circle at 85% 15%,#51318b88,transparent 38%),linear-gradient(120deg,#111c36,#1b1230 58%,#101a2a);box-shadow:inset 0 1px #ffffff16,0 0 22px #674dff12}
+.spellbook-banner span{font-size:10px;letter-spacing:2px;color:#b9a6ff;font-weight:900}.spellbook-banner b{font-size:18px}.spellbook-banner small{color:#aab8d4}
+.spell-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.spell-card{--spell:#8d8cff;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;min-width:0;padding:12px;border:1px solid color-mix(in srgb,var(--spell) 48%,#25334c);border-radius:14px;background:radial-gradient(circle at 100% 0,color-mix(in srgb,var(--spell) 17%,transparent),transparent 52%),linear-gradient(145deg,#18233a,#0c1321 80%);box-shadow:inset 0 1px #ffffff0b;transition:transform .18s,border-color .18s,box-shadow .18s}.spell-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--spell);box-shadow:0 0 12px var(--spell)}.spell-card.spell-unlocked{animation:runePulse 4s ease-in-out infinite}.spell-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px #0004,0 0 14px color-mix(in srgb,var(--spell) 13%,transparent)}.spell-locked{filter:saturate(.55);opacity:.78}.spell-top{display:flex;align-items:center;justify-content:space-between}.spell-icon{width:43px;height:43px;display:grid;place-items:center;border-radius:12px;font-size:25px;background:color-mix(in srgb,var(--spell) 15%,#0c1321);border:1px solid color-mix(in srgb,var(--spell) 42%,#263550);text-shadow:0 0 15px var(--spell)}.spell-school{font-size:9px;font-weight:900;letter-spacing:1px;color:var(--spell);text-align:right}.spell-name{font-size:14px;line-height:1.3}.spell-desc{font-size:11px;line-height:1.45;color:#a9b8d0;flex:1}.spell-bottom{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px}.spell-bottom span{font-size:10px;color:#aab9d0}.spell-cast{font-size:10px!important;padding:8px 9px!important;border-radius:9px!important;background:linear-gradient(135deg,color-mix(in srgb,var(--spell) 55%,#18243b),#172039)!important;border-color:color-mix(in srgb,var(--spell) 60%,#293750)!important;white-space:nowrap}.spell-cast:disabled{opacity:.5;filter:grayscale(.55)}.spell-card.frost{--spell:#69dcff}.spell-card.arcane{--spell:#b18cff}.spell-card.martial{--spell:#ffb36b}.spell-card.shadow{--spell:#a8a1ff}.spell-card.restoration{--spell:#65e8a3}.spell-card.storm{--spell:#67c8ff}.spell-card.astral{--spell:#f6d479}.spell-card.spirit{--spell:#86f3d0}.spell-card.void{--spell:#d38cff}.spell-card.draconic{--spell:#ff7e91}.spell-card.neon{--spell:#62f5ff}.spell-card.ultimate{--spell:#ff9ce8}@keyframes runePulse{0%,100%{box-shadow:inset 0 1px #ffffff0b,0 0 0 #8d8cff00}50%{box-shadow:inset 0 1px #ffffff0b,0 0 14px color-mix(in srgb,var(--spell) 10%,transparent)}}
+@media(max-width:520px){.spell-grid{grid-template-columns:1fr}.spell-card{padding:11px}.spellbook-banner b{font-size:16px}}
+
+</style>
+
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div><div class="brand">⚔️ REALMFORGE</div><div class="sub">Idle RPG • v1.2 Secret Ramen Boss</div></div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><label for="languageSelect" class="small" id="languageLabel">🌐 Language</label><select id="languageSelect" aria-label="Language" style="max-width:145px;background:#0b1320;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px"><option value="en">English</option><option value="lt">Lietuvių</option><option value="es">Español</option><option value="pl">Polski</option></select><button id="accountBtn">👤 Account</button><button id="settingsBtn" aria-label="Settings">⚙️</button></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">💰 Gold<b class="goldText" id="gold">0</b></div>
+    <div class="stat">⭐ Level<b id="level">1</b></div>
+    <div class="stat">🏆 Wave<b id="wave">1</b></div>
+    <div class="stat">⚔️ Power<b id="power">10</b></div>
+  </div>
+
+  <section class="hero">
+    <div id="enemyEmoji" class="enemy">👹</div>
+    <div id="enemyName" class="enemyName">Slime Scout</div>
+    <div class="small">HP <span id="hpText"></span></div>
+    <div class="bar"><div id="hpFill" class="fill"></div></div>
+    <div class="actions">
+      <button class="primary" id="attackBtn">⚔️ Attack</button>
+      <button id="autoBtn">⏱️ Auto: ON</button>
+      <button class="gold" id="claimBtn">🎁 Idle Reward</button>
+      <button id="ramenShrineBtn" onclick="summonRamenOverlord()">🍜 Ramen Shrine</button>
+      <button id="neonBossBtn" onclick="summonNeonOverlord()">🔒 Neon Overlord — Defeat Ramen Boss First</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="tabs">
+        <button class="active" data-tab="equipment">🛡️ Equipment</button>
+        <button data-tab="skills">✨ Skills</button>
+        <button data-tab="backpack">🎒 Backpack</button>
+        <button data-tab="character">🧙 Character</button>
+        <button data-tab="achievements">🏆 Achievements</button>
+      </div>
+      <div id="tabContent"></div>
+    </section>
+
+    <section class="panel">
+      <h3>📜 Battle Log</h3>
+      <div id="log" class="log"></div>
+      <hr style="border-color:#26334b">
+      <h3>👥 Team</h3>
+      <div class="small">👑 neitanasgrinius10k — Creator</div>
+      <div class="small">🧪 vanesagriniute10k — Tester</div>
+      <button style="margin-top:8px;width:100%" id="supportBtn">🐛 Contact Support / Report Bug</button>
+      <button style="margin-top:8px;width:100%" id="promoBtn">🎁 Promo Code</button>
+    </section>
+  </div>
+</div>
+
+<div id="modal" class="modal"><div class="modalBox" id="modalBox"></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY="realmforge_local_v1";
+const enemies=[
+ ["👹","Slime Scout",40],["🐺","Moon Wolf",65],["🧌","Stone Brute",100],["🦂","Ember Scorpion",150],
+ ["👻","Forgotten Wraith",220],["🐉","Young Drake",320],["👑","Realm Guardian",500]
+];
+let s=JSON.parse(localStorage.getItem(KEY)||"null")||{
+ name:"neitanasgrinius10k",gold:150,level:1,xp:0,wave:1,power:10,auto:true,enemyHp:40,maxHp:40,
+ equipped:["Iron Sword"],inventory:["Iron Sword","Traveler Armor","Minor Health Potion"],
+ skills:{fireball:0,whirlwind:0},claimedPromo:[],lastReward:Date.now()
+};
+let enemyIndex=(s.wave-1)%enemies.length;
+// Secret boss progress is migrated safely into existing local saves.
+s.spicyPeppers = Number.isFinite(s.spicyPeppers) ? s.spicyPeppers : 0;
+s.ramenBossDefeated = !!s.ramenBossDefeated;
+s.ramenBossActive = !!s.ramenBossActive;
+s.ramenBossHp = Number.isFinite(s.ramenBossHp) ? s.ramenBossHp : 6000;
+s.playerHp = Number.isFinite(s.playerHp) ? s.playerHp : 100;
+s.ramenBossPhase = Number.isFinite(s.ramenBossPhase) ? s.ramenBossPhase : 1;
+
+// Neon Overlord state: unlocked only after defeating the Ramen Overlord.
+s.neonBossUnlocked = !!s.neonBossUnlocked;
+s.neonBossDefeated = !!s.neonBossDefeated;
+s.neonBossActive = !!s.neonBossActive;
+s.neonBossHp = Number.isFinite(s.neonBossHp) ? s.neonBossHp : 15000;
+s.neonBossPhase = Number.isFinite(s.neonBossPhase) ? s.neonBossPhase : 1;
+s.neonBossShield = Number.isFinite(s.neonBossShield) ? s.neonBossShield : 0;
+s.neonArmorDropped = !!s.neonArmorDropped;
+
+const $=id=>document.getElementById(id);
+let activeTab="equipment";
+if(!["en","lt","es","pl"].includes(s.lang))s.lang="en";
+const LANG={
+ en:{language:"🌐 Language",account:"👤 Account",settings:"⚙️ Settings",gold:"💰 Gold",level:"⭐ Level",wave:"🏆 Wave",power:"⚔️ Power",attack:"⚔️ Attack",autoOn:"⏱️ Auto: ON",autoOff:"⏱️ Auto: OFF",idle:"🎁 Idle Reward",equipment:"🛡️ Equipment",skills:"✨ Skills",backpack:"🎒 Backpack",character:"🧙 Character",achievements:"🏆 Achievements",battleLog:"📜 Battle Log",team:"👥 Team",support:"🐛 Contact Support / Report Bug",promo:"🎁 Promo Code",slots:"One item per slot. Replaced gear stays in your backpack.",availableGear:"Available Gear",empty:"Empty slot",noItem:"No item equipped",equip:"Equip",equipped:"Equipped",unequip:"Unequip",owned:"Owned item",pepper:"🌶️ Spicy Peppers",offering:"Ramen Shrine offering",items:"items • Unequipped gear remains here.",progression:"🧙 Character Progression",experience:"✨ Experience",basePower:"⚔️ Base power",totalPower:"🗡️ Total power",maxHp:"❤️ Maximum HP",levelRule:"Each level grants +3 base power and +5 maximum HP.",milestones:"Milestones",unlocked:"UNLOCKED",locked:"LOCKED",skillDesc:"Unlock powerful skills as you level up.",firstSteps:"First Steps",firstDesc:"Clear your first wave.",rising:"Rising Hero",risingDesc:"Reach level 10.",spiceCollector:"Spice Collector",spiceDesc:"Collect 10 Spicy Peppers at once.",soupSlayer:"Soup Slayer",soupDesc:"Defeat the secret Ramen Overlord.",neonHunter:"Neon Hunter",neonDesc:"Defeat the Neon Overlord.",neonKnight:"Neon Knight",neonKnightDesc:"Obtain the super-rare Neon Armor.",restores:"Consumable • restores up to 50 HP",ramenBonus:"✨ +100 power on next attack",slotWeapon:"⚔️ Weapon",slotArmor:"🛡️ Armor",slotAccessory:"💍 Accessory"},
+ lt:{language:"🌐 Kalba",account:"👤 Paskyra",settings:"⚙️ Nustatymai",gold:"💰 Auksas",level:"⭐ Lygis",wave:"🏆 Banga",power:"⚔️ Galia",attack:"⚔️ Atakuoti",autoOn:"⏱️ Auto: ĮJUNGTA",autoOff:"⏱️ Auto: IŠJUNGTA",idle:"🎁 Neaktyvumo atlygis",equipment:"🛡️ Įranga",skills:"✨ Gebėjimai",backpack:"🎒 Kuprinė",character:"🧙 Veikėjas",achievements:"🏆 Pasiekimai",battleLog:"📜 Mūšio žurnalas",team:"👥 Komanda",support:"🐛 Pranešti apie klaidą",promo:"🎁 Nuolaidos kodas",slots:"Kiekvienoje vietoje gali būti vienas daiktas. Pakeista įranga lieka kuprinėje.",availableGear:"Turima įranga",empty:"Tuščia vieta",noItem:"Nieko neįdėta",equip:"Uždėti",equipped:"Uždėta",unequip:"Nusiimti",owned:"Turimas daiktas",pepper:"🌶️ Aštrieji pipirai",offering:"Ramen šventyklos auka",items:"daiktai • Nenaudojama įranga lieka kuprinėje.",progression:"🧙 Veikėjo tobulėjimas",experience:"✨ Patirtis",basePower:"⚔️ Bazinė galia",totalPower:"🗡️ Bendra galia",maxHp:"❤️ Maks. gyvybės",levelRule:"Kiekvienas lygis suteikia +3 bazinės galios ir +5 maks. gyvybių.",milestones:"Etapai",unlocked:"ATRAKINTA",locked:"UŽRAKINTA",skillDesc:"Kildamas lygiais atrakink galingus gebėjimus.",firstSteps:"Pirmieji žingsniai",firstDesc:"Įveik pirmą bangą.",rising:"Kylantis herojus",risingDesc:"Pasiek 10 lygį.",spiceCollector:"Prieskonių rinkėjas",spiceDesc:"Surink 10 aštriųjų pipirų.",soupSlayer:"Sriubos siaubūnas",soupDesc:"Nugalėk slaptąjį Ramen Overlord.",neonHunter:"Neono medžiotojas",neonDesc:"Nugalėk Neon Overlord.",neonKnight:"Neono riteris",neonKnightDesc:"Gauk itin retus Neon šarvus.",restores:"Suvartojamas daiktas • atkuria iki 50 gyvybių",ramenBonus:"✨ +100 galios kitam smūgiui",slotWeapon:"⚔️ Ginklas",slotArmor:"🛡️ Šarvai",slotAccessory:"💍 Aksesuaras"},
+ es:{language:"🌐 Idioma",account:"👤 Cuenta",settings:"⚙️ Ajustes",gold:"💰 Oro",level:"⭐ Nivel",wave:"🏆 Oleada",power:"⚔️ Poder",attack:"⚔️ Atacar",autoOn:"⏱️ Auto: SÍ",autoOff:"⏱️ Auto: NO",idle:"🎁 Recompensa inactiva",equipment:"🛡️ Equipo",skills:"✨ Habilidades",backpack:"🎒 Mochila",character:"🧙 Personaje",achievements:"🏆 Logros",battleLog:"📜 Registro de batalla",team:"👥 Equipo",support:"🐛 Informar de un error",promo:"🎁 Código promocional",slots:"Un objeto por espacio. El equipo sustituido vuelve a la mochila.",availableGear:"Equipo disponible",empty:"Espacio vacío",noItem:"Sin objeto equipado",equip:"Equipar",equipped:"Equipado",unequip:"Quitar",owned:"Objeto propio",pepper:"🌶️ Pimientos picantes",offering:"Ofrenda del santuario ramen",items:"objetos • El equipo sin usar permanece aquí.",progression:"🧙 Progreso del personaje",experience:"✨ Experiencia",basePower:"⚔️ Poder base",totalPower:"🗡️ Poder total",maxHp:"❤️ Salud máxima",levelRule:"Cada nivel otorga +3 de poder base y +5 de salud máxima.",milestones:"Hitos",unlocked:"DESBLOQUEADO",locked:"BLOQUEADO",skillDesc:"Desbloquea habilidades poderosas al subir de nivel.",firstSteps:"Primeros pasos",firstDesc:"Supera tu primera oleada.",rising:"Héroe en ascenso",risingDesc:"Llega al nivel 10.",spiceCollector:"Recolector de especias",spiceDesc:"Reúne 10 pimientos picantes.",soupSlayer:"Cazador de sopa",soupDesc:"Derrota al Ramen Overlord secreto.",neonHunter:"Cazador neón",neonDesc:"Derrota al Neon Overlord.",neonKnight:"Caballero neón",neonKnightDesc:"Consigue la armadura neón superrara.",restores:"Consumible • restaura hasta 50 de salud",ramenBonus:"✨ +100 de poder en el próximo ataque",slotWeapon:"⚔️ Arma",slotArmor:"🛡️ Armadura",slotAccessory:"💍 Accesorio"},
+ pl:{language:"🌐 Język",account:"👤 Konto",settings:"⚙️ Ustawienia",gold:"💰 Złoto",level:"⭐ Poziom",wave:"🏆 Fala",power:"⚔️ Moc",attack:"⚔️ Atakuj",autoOn:"⏱️ Auto: WŁĄCZONE",autoOff:"⏱️ Auto: WYŁĄCZONE",idle:"🎁 Nagroda bezczynności",equipment:"🛡️ Wyposażenie",skills:"✨ Umiejętności",backpack:"🎒 Plecak",character:"🧙 Postać",achievements:"🏆 Osiągnięcia",battleLog:"📜 Dziennik walki",team:"👥 Drużyna",support:"🐛 Zgłoś błąd",promo:"🎁 Kod promocyjny",slots:"Jeden przedmiot na miejsce. Zastąpiony sprzęt wraca do plecaka.",availableGear:"Dostępny sprzęt",empty:"Puste miejsce",noItem:"Brak wyposażenia",equip:"Załóż",equipped:"Założono",unequip:"Zdejmij",owned:"Posiadany przedmiot",pepper:"🌶️ Ostre papryczki",offering:"Dar dla kapliczki ramen",items:"przedmioty • Nieużywany sprzęt pozostaje w plecaku.",progression:"🧙 Rozwój postaci",experience:"✨ Doświadczenie",basePower:"⚔️ Moc bazowa",totalPower:"🗡️ Łączna moc",maxHp:"❤️ Maks. zdrowie",levelRule:"Każdy poziom daje +3 mocy bazowej i +5 maks. zdrowia.",milestones:"Kamienie milowe",unlocked:"ODBLOKOWANO",locked:"ZABLOKOWANO",skillDesc:"Odblokowuj potężne umiejętności, zdobywając poziomy.",firstSteps:"Pierwsze kroki",firstDesc:"Ukończ pierwszą falę.",rising:"Rosnący bohater",risingDesc:"Osiągnij poziom 10.",spiceCollector:"Zbieracz przypraw",spiceDesc:"Zbierz 10 ostrych papryczek.",soupSlayer:"Pogromca zupy",soupDesc:"Pokonaj tajnego Ramen Overlorda.",neonHunter:"Łowca neonu",neonDesc:"Pokonaj Neon Overlorda.",neonKnight:"Neonowy rycerz",neonKnightDesc:"Zdobądź superrzadką neonową zbroję.",restores:"Przedmiot zużywalny • przywraca do 50 zdrowia",ramenBonus:"✨ +100 mocy do następnego ataku",slotWeapon:"⚔️ Broń",slotArmor:"🛡️ Zbroja",slotAccessory:"💍 Akcesorium"}
+};
+function tr(key){return (LANG[s.lang]||LANG.en)[key]||LANG.en[key]||key;}
+function applyLanguage(){
+ const lang=$('languageSelect'); if(lang)lang.value=LANG[s.lang]?s.lang:'en'; const languageLabel=$('languageLabel');if(languageLabel)languageLabel.textContent=tr('language');
+ const byId={accountBtn:'account',attackBtn:'attack',claimBtn:'idle',supportBtn:'support',promoBtn:'promo'};
+ Object.entries(byId).forEach(([id,key])=>{const el=$(id);if(el)el.textContent=tr(key)});
+ const settings=$('settingsBtn');if(settings)settings.title=tr('settings');
+ const labels=document.querySelectorAll('.stats .stat');
+ ['gold','level','wave','power'].forEach((key,i)=>{if(labels[i]){const b=labels[i].querySelector('b');if(b){labels[i].childNodes[0].textContent=tr(key)+' ';}}});
+ document.querySelectorAll('.tabs button[data-tab]').forEach(b=>{const key=b.dataset.tab;b.textContent=tr(key)});
+ const heads=document.querySelectorAll('.grid .panel h3');if(heads[0])heads[0].textContent=tr('equipment');if(heads[1])heads[1].textContent=tr('battleLog');
+ const teamHeads=document.querySelectorAll('.grid .panel h3');if(teamHeads[2])teamHeads[2].textContent=tr('team');
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(s))}
+function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",1800)}
+function log(t){$("log").innerHTML="<div>"+t+"</div>"+$("log").innerHTML}
+function enemySetup(){let e=enemies[enemyIndex];s.maxHp=e[2]+Math.floor(s.wave*12);s.enemyHp=s.maxHp}
+const ITEM_DATA={"Iron Sword":{slot:"weapon",rarity:"Common",power:0,health:0,desc:"Reliable starter weapon."},"Steel Blade":{slot:"weapon",rarity:"Rare",power:15,health:0,desc:"+15 power."},"Traveler Armor":{slot:"armor",rarity:"Common",power:0,health:25,desc:"+25 maximum HP."},"Knight Armor":{slot:"armor",rarity:"Rare",power:3,health:60,desc:"+3 power, +60 maximum HP."},"Mana Ring":{slot:"accessory",rarity:"Rare",power:8,health:10,desc:"+8 power, +10 maximum HP."},"Neon Armor":{slot:"armor",rarity:"Legendary",power:12,health:100,desc:"+12 power, +100 maximum HP."},"Chopsticks of Doom":{slot:"weapon",rarity:"Legendary",power:20,health:0,desc:"Ramen Overlord legendary reward."}};
+if(!s.gear||typeof s.gear!=="object")s.gear={weapon:null,armor:null,accessory:null};
+if(!s.gear.weapon)s.gear.weapon=(s.equipped||[]).includes("Steel Blade")?"Steel Blade":"Iron Sword";
+if(!s.gear.armor)s.gear.armor=(s.equipped||[]).includes("Knight Armor")?"Knight Armor":((s.equipped||[]).includes("Traveler Armor")?"Traveler Armor":null);
+if(!s.gear.accessory)s.gear.accessory=(s.equipped||[]).includes("Mana Ring")?"Mana Ring":null;
+function equippedItems(){return Object.values(s.gear).filter(Boolean)}
+function gearBonus(key){return equippedItems().reduce((sum,n)=>sum+((ITEM_DATA[n]||{})[key]||0),0)}
+function maxPlayerHealth(){return 100+gearBonus("health")+(s.level-1)*5}
+function power(){return s.power+s.level*3+gearBonus("power")}
+
+const RF_SKILLS = [
+  {id:"power_strike", name:"Power Strike", icon:"⚔️", school:"MARTIAL", unlock:2, cd:12, mult:1.8, desc:"A crushing blade strike. Deals 180% Power damage."},
+  {id:"arcane_burst", name:"Arcane Burst", icon:"🔮", school:"ARCANE", unlock:4, cd:22, mult:2.8, desc:"Detonate a rune of raw magic. Deals 280% Power damage."},
+  {id:"battle_fury", name:"Battle Fury", icon:"🔥", school:"MARTIAL", unlock:7, cd:35, mult:0, desc:"Enter a fury state: your next 3 attacks deal 50% more damage."},
+  {id:"frost_nova", name:"Frost Nova", icon:"❄️", school:"FROST", unlock:10, cd:38, mult:3.6, desc:"Blast the enemy with glacial magic. Deals 360% Power damage."},
+  {id:"shadow_step", name:"Shadow Step", icon:"🌑", school:"SHADOW", unlock:12, cd:28, mult:3.1, desc:"Blink through the shadows and strike for 310% Power damage."},
+  {id:"healing_surge", name:"Healing Surge", icon:"💚", school:"RESTORATION", unlock:13, cd:45, type:"heal", desc:"Channel green runes to restore 45% of your maximum HP."},
+  {id:"thunder_lance", name:"Thunder Lance", icon:"⚡", school:"STORM", unlock:14, cd:34, mult:4.2, desc:"Pierce the enemy with lightning. Deals 420% Power damage."},
+  {id:"meteor", name:"Meteor", icon:"☄️", school:"ASTRAL", unlock:15, cd:55, mult:5.0, desc:"Call a blazing meteor from the sky. Deals 500% Power damage."},
+  {id:"arcane_barrier", name:"Arcane Barrier", icon:"🛡️", school:"ARCANE", unlock:18, cd:50, type:"barrier", desc:"A protective rune restores 25 HP and empowers your next attack by 50%."},
+  {id:"spirit_wolf", name:"Spirit Wolf", icon:"🐺", school:"SPIRIT", unlock:20, cd:48, mult:5.5, desc:"Summon a spectral wolf to maul your foe for 550% Power damage."},
+  {id:"void_cleave", name:"Void Cleave", icon:"🌀", school:"VOID", unlock:22, cd:75, mult:7.5, desc:"Rip open a rift and cleave through reality. Deals 750% Power damage."},
+  {id:"dragon_roar", name:"Dragon Roar", icon:"🐉", school:"DRACONIC", unlock:25, cd:70, mult:8.5, desc:"Unleash an ancient dragon's roar. Deals 850% Power damage."},
+  {id:"starfall", name:"Starfall", icon:"🌠", school:"ASTRAL", unlock:30, cd:90, mult:11, desc:"Rain astral shards from the heavens. Deals 1100% Power damage."},
+  {id:"neon_overdrive", name:"Neon Overdrive", icon:"💠", school:"NEON", unlock:35, cd:100, mult:13, desc:"Overcharge with neon energy. Deals 1300% Power damage."},
+  {id:"eclipse", name:"Eclipse Cataclysm", icon:"🌘", school:"ULTIMATE", unlock:40, cd:120, mult:17, desc:"Fuse light and void into a cataclysmic strike. Deals 1700% Power damage."}
+];
+
+function skillState(id){
+  if(!s.skillCooldowns) s.skillCooldowns = {};
+  return s.skillCooldowns[id] || 0;
+}
+
+function skillReady(id){
+  return Date.now() >= skillState(id);
+}
+
+function useSkill(id){
+  const skill = RF_SKILLS.find(x => x.id === id);
+  if(!skill) return;
+  if(s.level < skill.unlock){ log("🔒 " + skill.name + " unlocks at level " + skill.unlock + "."); render(); return; }
+  const now = Date.now();
+  if(now < skillState(id)){ const left = Math.ceil((skillState(id)-now)/1000); log("⏳ " + skill.name + " is on cooldown for " + left + "s."); render(); return; }
+  s.skillCooldowns[id] = now + skill.cd*1000;
+  if(skill.id === "battle_fury"){
+    s.fury = Math.max(s.fury || 0, 3);
+    log("🔥 Battle Fury activated! Your next 3 attacks deal 50% more damage.");
+  } else if(skill.type === "heal"){
+    const before = s.playerHp || maxPlayerHealth();
+    const amount = Math.max(1, Math.floor(maxPlayerHealth()*0.45));
+    s.playerHp = Math.min(maxPlayerHealth(), before + amount);
+    log("💚 Healing Surge restored " + (s.playerHp-before) + " HP. ("+s.playerHp+" / "+maxPlayerHealth()+")");
+    toast("💚 Healing Surge!");
+  } else if(skill.type === "barrier"){
+    const before = s.playerHp || maxPlayerHealth();
+    s.playerHp = Math.min(maxPlayerHealth(), before + 25);
+    s.ramenBonus = (s.ramenBonus || 0) + 1;
+    s.nextAttackBonus = (s.nextAttackBonus || 0) + 0.5;
+    log("🛡️ Arcane Barrier restored "+(s.playerHp-before)+" HP and charged your next attack!");
+    toast("🛡️ Barrier charged!");
+  } else {
+    log(skill.icon + " " + skill.name + " unleashed!");
+    attack(skill.mult);
+  }
+  save(); render();
+}
+
+function renderSkills(){
+  const box = document.getElementById("skills");
+  if(!box) return;
+  const now = Date.now();
+  box.innerHTML = RF_SKILLS.map(skill => {
+    const unlocked = s.level >= skill.unlock;
+    const left = Math.max(0, Math.ceil((skillState(skill.id)-now)/1000));
+    const ready = unlocked && left <= 0;
+    return `<div class="skill-card" style="margin:10px 0;padding:12px;border:1px solid #31405d;border-radius:12px;background:rgba(10,16,28,.72)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:25px">${skill.icon}</div>
+        <div style="flex:1">
+          <b>${skill.name}</b>
+          <div class="muted">${skill.desc}</div>
+          <small>${unlocked ? ("Cooldown: "+skill.cd+"s") : ("🔒 Unlocks at level "+skill.unlock)}</small>
+        </div>
+        <button ${ready ? "" : "disabled"} onclick="useSkill('${skill.id}')">${!unlocked ? "LOCKED" : (left > 0 ? left+"s" : "USE")}</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+
+const RF_OWNER = "neitanasgrinius10k";
+
+function isOwner(){
+  return String(s.name || "").trim().toLowerCase() === RF_OWNER;
+}
+
+function addFriend(){
+  const name = prompt("Enter the Realmforge username to add:");
+  if(!name) return;
+  const clean = name.trim();
+  if(!clean) return;
+  if(clean.toLowerCase() === String(s.playerName).toLowerCase()){
+    log("You can't add yourself as a friend.");
+    return;
+  }
+  if(!s.friends) s.friends = [];
+  if(s.friends.some(x => x.toLowerCase() === clean.toLowerCase())){
+    log("That player is already on your friends list.");
+    return;
+  }
+  s.friends.push(clean);
+  save();
+  render();
+}
+
+function removeFriend(name){
+  if(!s.friends) return;
+  s.friends = s.friends.filter(x => x !== name);
+  save();
+  render();
+}
+
+function renderFriends(){
+  const box = document.getElementById("friendsTab");
+  if(!box) return;
+  if(!s.friends) s.friends = [];
+  box.innerHTML = `
+    <div class="panel">
+      <h2>👥 Friends</h2>
+      <div class="muted">Add Realmforge players by username.</div>
+      <button onclick="addFriend()">➕ Add Friend</button>
+      <div style="margin-top:10px">
+        ${s.friends.length ? s.friends.map(name => `
+          <div class="friend-row">
+            <div><b>${name}</b><div class="friend-online">⚪ Status unavailable in offline prototype</div></div>
+            <button onclick="removeFriend('${name.replace(/'/g,"\\'")}')">Remove</button>
+          </div>`).join("") : `<div class="muted" style="margin-top:12px">No friends yet.</div>`}
+      </div>
+    </div>`;
+}
+
+function renderAdmin(){
+  const box = document.getElementById("adminTab");
+  if(!box) return;
+  // Do not rebuild the admin form while the player is typing: frequent game renders
+  // would replace the input and make the mobile keyboard lose focus.
+  const focused = document.activeElement;
+  if(focused && box.contains(focused) && focused.tagName === "INPUT") return;
+  if(!isOwner()){
+    box.innerHTML = `<div class="panel"><b>🔒 Creator Admin Panel</b><p class="small">The local creator tools are locked for <b>${String(s.name||"Guest")}</b>. Open Account and set the name to <b>${RF_OWNER}</b> to show them.</p></div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="admin-panel">
+      <span class="admin-badge">👑 CREATOR TOOLS — LOCAL TEST BUILD</span>
+      <h2>🛠️ Creator Admin Panel</h2>
+      <div class="small">These buttons change this device's local save immediately. They do not change the live GitHub Pages game or other players' saves.</div>
+      <hr>
+      <b>Creator:</b> ${RF_OWNER}<br><b>Role:</b> Local tester tools<br><b>Tester:</b> vanesagriniute10k
+      <h3>💰 Economy</h3>
+      <label for="adminGoldAmount" class="small">Gold amount</label>
+      <input id="adminGoldAmount" type="number" min="1" max="100000000" value="1000" style="width:100%;padding:10px;border-radius:9px;border:1px solid #30415d;background:#080d18;color:white;margin:6px 0">
+      <div class="actions"><button class="gold" data-admin-action="addGold">➕ Add Gold</button><button data-admin-action="removeGold">➖ Remove Gold</button><button data-admin-action="setGold">Set Gold to Amount</button></div>
+      <h3>⭐ Player</h3>
+      <label for="adminLevelAmount" class="small">Set level (1–1000)</label>
+      <input id="adminLevelAmount" type="number" min="1" max="1000" value="10" style="width:100%;padding:10px;border-radius:9px;border:1px solid #30415d;background:#080d18;color:white;margin:6px 0">
+      <button data-admin-action="setLevel">Set Level</button>
+      <label for="adminWaveAmount" class="small" style="display:block;margin-top:10px">Set wave (1–10000)</label>
+      <input id="adminWaveAmount" type="number" min="1" max="10000" value="5" style="width:100%;padding:10px;border-radius:9px;border:1px solid #30415d;background:#080d18;color:white;margin:6px 0">
+      <button data-admin-action="setWave">Set Wave</button> <button data-admin-action="heal">💚 Restore HP</button>
+      <h3>🎒 Items & Secret Boss</h3>
+      <div class="actions"><button data-admin-action="ramen">🍜 Give Healing Ramen</button><button data-admin-action="peppers">🌶️ Give 10 Peppers</button><button data-admin-action="summonBoss">Summon Ramen Overlord</button><button data-admin-action="resetBoss">Reset Ramen Boss</button></div>
+      <div class="actions" style="margin-top:8px"><button data-admin-action="unlockNeon">⚡ Unlock Neon Overlord</button><button data-admin-action="summonNeon">Summon Neon Overlord</button><button data-admin-action="resetNeon">Reset Neon Boss</button></div>
+      <p class="small" style="margin-top:12px">⚠️ Prototype only: anyone can edit browser files or local storage. Real owner permissions need secure server authentication.</p>
+    </div>`;
+}
+
+function runAdminAction(action){
+  if(!isOwner()){toast("Creator tools are locked for this username.");return;}
+  const amountInput=$("adminGoldAmount");
+  const amount=Math.floor(Number(amountInput?.value));
+  if(["addGold","removeGold","setGold"].includes(action) && (!Number.isFinite(amount)||amount<1||amount>100000000)){toast("Enter an amount from 1 to 100,000,000.");return;}
+  if(action==="addGold"){s.gold+=amount;toast("👑 Added "+amount.toLocaleString()+" gold.");log("👑 Creator tool: added "+amount.toLocaleString()+" gold.");}
+  else if(action==="removeGold"){s.gold=Math.max(0,s.gold-amount);toast("Removed "+amount.toLocaleString()+" gold.");log("🛠️ Creator tool: removed "+amount.toLocaleString()+" gold.");}
+  else if(action==="setGold"){s.gold=amount;toast("Gold set to "+amount.toLocaleString()+".");log("🛠️ Creator tool: gold set to "+amount.toLocaleString()+".");}
+  else if(action==="setLevel"){
+    const v=Math.floor(Number($("adminLevelAmount")?.value));if(!Number.isFinite(v)||v<1||v>1000){toast("Level must be 1–1000.");return;}s.level=v;s.xp=0;s.power=Math.max(10,v*3);toast("⭐ Level set to "+v+".");log("🛠️ Creator tool: level set to "+v+".");
+  }
+  else if(action==="setWave"){
+    const v=Math.floor(Number($("adminWaveAmount")?.value));if(!Number.isFinite(v)||v<1||v>10000){toast("Wave must be 1–10000.");return;}s.wave=v;enemyIndex=(s.wave-1)%enemies.length;enemySetup();toast("🏆 Wave set to "+v+".");log("🛠️ Creator tool: wave set to "+v+".");
+  }
+  else if(action==="heal"){s.playerHp=100;toast("💚 HP restored!");log("💚 Creator tool: player HP restored.");}
+  else if(action==="ramen"){s.inventory.push("Legendary Healing Ramen");toast("🍜 Legendary Healing Ramen added!");log("🍜 Creator tool: added Legendary Healing Ramen.");}
+  else if(action==="peppers"){s.spicyPeppers=(s.spicyPeppers||0)+10;toast("🌶️ Added 10 Spicy Peppers!");log("🌶️ Creator tool: added 10 Spicy Peppers.");}
+  else if(action==="summonBoss"){
+    if(s.ramenBossDefeated){toast("Boss already defeated; reset it first.");return;}s.level=Math.max(25,s.level);s.spicyPeppers=Math.max(10,s.spicyPeppers||0);summonRamenOverlord();return;
+  }
+  else if(action==="resetBoss"){s.ramenBossDefeated=false;s.ramenBossActive=false;s.ramenBossHp=6000;s.ramenBossPhase=1;s.playerHp=100;s.spicyPeppers=Math.max(10,s.spicyPeppers||0);toast("🍜 Ramen Overlord reset for testing.");log("🛠️ Creator tool: Ramen Overlord reset.");}
+  else if(action==="unlockNeon"){s.neonBossUnlocked=true;toast("⚡ Neon Overlord unlocked for testing!");log("🛠️ Creator tool: Neon Overlord unlocked.");}
+  else if(action==="summonNeon"){s.neonBossUnlocked=true;s.neonBossDefeated=false;s.neonBossActive=false;s.ramenBossActive=false;s.level=Math.max(40,s.level);summonNeonOverlord();return;}
+  else if(action==="resetNeon"){s.neonBossUnlocked=true;s.neonBossDefeated=false;s.neonBossActive=false;s.neonBossHp=15000;s.neonBossPhase=1;s.neonBossShield=0;s.neonArmorDropped=false;s.inventory=(s.inventory||[]).filter(x=>x!=="Neon Armor");s.playerHp=100;toast("⚡ Neon Overlord reset for testing.");log("🛠️ Creator tool: Neon Overlord reset.");}
+  save();render();
+}
+
+function renderAchievements(box){
+ const achievements=[
+  {id:"first_wave",name:tr("firstSteps"),desc:tr("firstDesc"),done:s.wave>1,icon:"⚔️"},
+  {id:"level_10",name:tr("rising"),desc:tr("risingDesc"),done:s.level>=10,icon:"⭐"},
+  {id:"spicy_10",name:tr("spiceCollector"),desc:tr("spiceDesc"),done:(s.spicyPeppers||0)>=10,icon:"🌶️"},
+  {id:"soup_slayer",name:tr("soupSlayer"),desc:tr("soupDesc"),done:!!s.ramenBossDefeated,icon:"🍜"},
+  {id:"neon_hunter",name:tr("neonHunter"),desc:tr("neonDesc"),done:!!s.neonBossDefeated,icon:"⚡"},
+  {id:"neon_armor",name:tr("neonKnight"),desc:tr("neonKnightDesc"),done:!!s.neonArmorDropped,icon:"🛡️"}
+ ];
+ box.innerHTML=`<h3>${tr("achievements")}</h3><p class="small">${achievements.filter(a=>a.done).length} / ${achievements.length} ${tr("unlocked").toLowerCase()}</p>${achievements.map(a=>`<div class="item achievement-card ${a.done?"is-done":""}"><span>${a.icon} <b>${a.name}</b><div class="rarity">${a.desc}</div></span><b class="${a.done?"good":"small"}">${a.done?tr("unlocked"):tr("locked")}</b></div>`).join("")}`;
+}
+
+function render(){
+  applyLanguage();
+  renderFriends();
+  renderAdmin();
+  renderSkills();
+ let e=enemies[enemyIndex];$("gold").textContent=s.gold.toLocaleString();$("level").textContent=s.level;
+ $("wave").textContent=s.wave;$("power").textContent=power();
+ if(s.neonBossActive){
+   $("enemyEmoji").textContent="⚡👑";$("enemyName").textContent="THE NEON OVERLORD — PHASE "+s.neonBossPhase;
+   $("hpText").textContent=Math.max(0,Math.ceil(s.neonBossHp))+" / 15000";
+   $("hpFill").style.width=Math.max(0,s.neonBossHp/15000*100)+"%";
+ }else if(s.ramenBossActive){
+   $("enemyEmoji").textContent="🍜👹";$("enemyName").textContent="THE RAMEN OVERLORD — PHASE "+s.ramenBossPhase;
+   $("hpText").textContent=Math.max(0,Math.ceil(s.ramenBossHp))+" / 6000";
+   $("hpFill").style.width=Math.max(0,s.ramenBossHp/6000*100)+"%";
+ }else{
+   $("enemyEmoji").textContent=e[0];$("enemyName").textContent=e[1];
+   $("hpText").textContent=Math.max(0,Math.ceil(s.enemyHp))+" / "+s.maxHp;
+   $("hpFill").style.width=Math.max(0,s.enemyHp/s.maxHp*100)+"%";
+ }
+ $("autoBtn").textContent=tr(s.auto?"autoOn":"autoOff");
+ const shrine=$("ramenShrineBtn");
+ if(shrine){shrine.textContent=s.ramenBossDefeated?"🏆 Ramen Overlord Defeated":(s.ramenBossActive?"⚔️ Boss Summoned":"🍜 Ramen Shrine (Lv.25 + 10 peppers)");shrine.disabled=s.ramenBossDefeated||s.ramenBossActive||s.neonBossActive||s.level<25||s.spicyPeppers<10;}
+ const neon=$("neonBossBtn");
+ if(neon){neon.textContent=s.neonBossDefeated?"🏆 Neon Overlord Defeated":(s.neonBossActive?"⚡ Neon Overlord Active":(s.neonBossUnlocked||s.name==="neitanasgrinius10k"?"⚡ Challenge Neon Overlord":"🔒 Neon Overlord — Defeat Ramen Boss First"));neon.disabled=(!s.neonBossUnlocked && s.name!=="neitanasgrinius10k")||s.neonBossDefeated||s.neonBossActive||s.ramenBossActive;}
+ renderTab(activeTab);save();
+}
+function attack(mult=1){
+ let bonus=(s.ramenBonus||0)>0?100:0;if(bonus)s.ramenBonus--;
+ let furyMult=(s.fury||0)>0?1.5:1;if((s.fury||0)>0)s.fury--;
+ let chargedMult=1+(s.nextAttackBonus||0);s.nextAttackBonus=0;
+ let dmg=Math.max(1,Math.floor((power()+bonus)*(.75+Math.random()*.6)*mult*furyMult*chargedMult));
+ if(s.neonBossActive){
+   let dealt=dmg;
+   if(s.neonBossShield>0){dealt=Math.floor(dmg*0.35);s.neonBossShield=0;log("🛡️ Plasma Shield absorbed most of your attack!");}
+   s.neonBossHp-=dealt;
+   log("⚔️ You hit the Neon Overlord for <b>"+dealt+"</b> damage!"+(bonus?" 🍜 Ramen power bonus used!":""));
+   if(s.neonBossHp<=10500&&s.neonBossPhase===1){s.neonBossPhase=2;log("🌈 PHASE 2! COLOR SHIFT — the Neon Overlord speeds up!");}
+   if(s.neonBossHp<=4500&&s.neonBossPhase===2){s.neonBossPhase=3;log("☢️ PHASE 3! OVERLOAD — the Neon Overlord enters maximum power!");}
+   if(s.neonBossHp<=0){defeatNeonOverlord();render();return;}
+   // Boss counterattack: phase 1 = 180, phase 2 = 225, phase 3 = 300.
+   if(Math.random()<(s.neonBossPhase===3?0.62:s.neonBossPhase===2?0.50:0.38)){
+     let hit=s.neonBossPhase===3?300:s.neonBossPhase===2?225:180;
+     s.playerHp=Math.max(0,s.playerHp-hit);
+     const moves=s.neonBossPhase===3?["☢️ Overload Strike","💥 Neon Burst","⚡ Neon Bolt"]:s.neonBossPhase===2?["🌈 Color Shift","💥 Neon Burst","⚡ Neon Bolt"]:["⚡ Neon Bolt","🛡️ Plasma Shield"];
+     const move=moves[Math.floor(Math.random()*moves.length)];
+     if(move.includes("Shield")){s.neonBossShield=1;log("🛡️ Plasma Shield activated! The next player attack is heavily reduced.");}
+     else {log(move+"! The Neon Overlord dealt <b>"+hit+"</b> damage.");}
+     if(s.playerHp===0){s.neonBossActive=false;s.neonBossHp=15000;s.neonBossPhase=1;s.neonBossShield=0;s.playerHp=100;log("💫 You were overwhelmed by the Neon Overlord. The fight resets.");}
+   } else if(Math.random()<0.22){
+     s.neonBossShield=1;log("🛡️ Plasma Shield activated! Your next attack will be reduced.");
+   }
+ }else if(s.ramenBossActive){
+   s.ramenBossHp-=dmg;log("⚔️ You hit the Ramen Overlord for <b>"+dmg+"</b> damage!"+(bonus?" 🍜 Ramen power bonus used!":""));
+   if(s.ramenBossHp<=4000&&s.ramenBossPhase===1){s.ramenBossPhase=2;log("🌶️ PHASE 2! The Overlord unleashes Spicy Explosion!");}
+   if(s.ramenBossHp<=2000&&s.ramenBossPhase===2){s.ramenBossPhase=3;log("🌀 PHASE 3! Noodle Whiplash incoming!");}
+   if(s.ramenBossHp<=0){defeatRamenOverlord();render();return;}
+   if(Math.random()<.32){let hit=s.ramenBossPhase===3?22:s.ramenBossPhase===2?16:10;s.playerHp=Math.max(0,s.playerHp-hit);log("🔥 Boss counterattack! Your battle stamina drops by "+hit+".");if(s.playerHp===0){s.ramenBossActive=false;s.ramenBossHp=6000;s.ramenBossPhase=1;s.playerHp=100;log("💫 You were overwhelmed! The Overlord resets. Your collected peppers are safe.");}}
+ }else{
+   s.enemyHp-=dmg;log("⚔️ You dealt <b>"+dmg+"</b> damage."+(bonus?" 🍜 Ramen power bonus used!":""));
+   if(s.enemyHp<=0) win();
+ }
+ render();
+}
+function summonRamenOverlord(){
+ if(s.ramenBossDefeated){toast("The Ramen Overlord has already been defeated!");return;}
+ if(s.level<25){toast("Reach level 25 to discover the hidden shrine.");return;}
+ if(s.spicyPeppers<10){toast("You need 10 Spicy Peppers. You have "+s.spicyPeppers+".");return;}
+ s.spicyPeppers-=10;s.ramenBossActive=true;s.ramenBossHp=6000;s.ramenBossPhase=1;s.playerHp=100;
+ log("🕯️ The shrine awakens... THE RAMEN OVERLORD HAS APPEARED!");toast("🍜 Secret boss summoned!");render();
+}
+function defeatRamenOverlord(){
+ s.ramenBossActive=false;s.ramenBossDefeated=true;s.ramenBossHp=0;s.gold+=5000;
+ if(!s.inventory.includes("Legendary Healing Ramen Recipe"))s.inventory.push("Legendary Healing Ramen Recipe");
+ if(!s.inventory.includes("Chopsticks of Doom"))s.inventory.push("Chopsticks of Doom");
+ log("🏆 SECRET BOSS DEFEATED! +5,000 gold, Legendary Healing Ramen Recipe, Chopsticks of Doom!");
+ s.neonBossUnlocked=true;
+ log("⚡ NEW BOSS UNLOCKED: THE NEON OVERLORD!");toast("⚡ Neon Overlord unlocked!");
+ log("🏅 Hidden achievement unlocked: SOUP SLAYER!");
+}
+function summonNeonOverlord(){
+ if(!s.neonBossUnlocked && s.name!=="neitanasgrinius10k"){toast("Defeat the Ramen Overlord first!");return;}
+ if(s.name==="neitanasgrinius10k") s.neonBossUnlocked=true;
+ if(s.neonBossDefeated){toast("The Neon Overlord has already been defeated!");return;}
+ s.neonBossActive=true;s.neonBossHp=15000;s.neonBossPhase=1;s.neonBossShield=0;s.playerHp=100;
+ log("🌌 The arena flashes neon... THE NEON OVERLORD HAS APPEARED!");
+ toast("⚡ Neon Overlord summoned!");
+ render();
+}
+function defeatNeonOverlord(){
+ s.neonBossActive=false;s.neonBossDefeated=true;s.neonBossHp=0;s.neonBossShield=0;s.gold+=7500;
+ log("🏆 NEON OVERLORD DEFEATED! +7,500 gold!");
+ if(Math.random()<0.15 && !s.neonArmorDropped){
+   s.neonArmorDropped=true;
+   s.inventory.push("Neon Armor");
+   log("🛡️ SUPER RARE DROP! NEON ARMOR obtained! (15% chance)");
+   toast("🛡️ NEON ARMOR DROPPED! ⚡");
+ }else{
+   log("🛡️ Neon Armor did not drop this time. Drop chance: 15%.");
+   toast("⚡ Neon Overlord defeated! Armor roll missed.");
+ }
+ log("🏅 Achievement unlocked: NEON HUNTER!");
+}
+function win(){
+ let reward=35+s.wave*12; s.gold+=reward;s.xp+=20+s.wave*3;
+ log("🏆 Wave "+s.wave+" cleared! +"+reward+" gold and +"+(20+s.wave*3)+" XP.");
+ let gained=0;while(s.xp>=s.level*100){s.xp-=s.level*100;s.level++;s.power+=3;gained++;}if(gained)log("⭐ Level up! Now level "+s.level+". +3 base power and +5 max HP per level.");
+ s.wave++;enemyIndex=(s.wave-1)%enemies.length;enemySetup();
+ if(Math.random()<.28){let drops=["Steel Blade","Knight Armor","Mana Ring","Health Potion","Legendary Healing Ramen"];let d=drops[Math.floor(Math.random()*drops.length)];s.inventory.push(d);log("🎁 Loot found: "+d);}
+ if(Math.random()<.35&&s.spicyPeppers<10){s.spicyPeppers++;log("🌶️ Spicy Pepper found! Shrine progress: "+s.spicyPeppers+"/10.");}
+}
+function renderTab(tab){
+ activeTab=tab||activeTab||"equipment";
+ let c=$("tabContent");
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
+ const slotLabels={weapon:tr('slotWeapon'),armor:tr('slotArmor'),accessory:tr('slotAccessory')};
+ if(activeTab==="equipment") c.innerHTML=`<h3>🛡️ ${tr('equipment')}</h3><p class="small">${tr('slots')}</p>${[{slot:"weapon",label:slotLabels.weapon},{slot:"armor",label:slotLabels.armor},{slot:"accessory",label:slotLabels.accessory}].map(a=>{let n=s.gear[a.slot],d=ITEM_DATA[n]||{};return `<div class="item"><span><b>${a.label}</b><div>${n||tr('empty')}</div><div class="rarity">${d.rarity||tr('noItem')}${d.power?" • +"+d.power+" power":""}${d.health?" • +"+d.health+" HP":""}</div></span>${n?`<button onclick="unequip('${a.slot}')">${tr('unequip')}</button>`:""}</div>`}).join("")}<h4>${tr('availableGear')}</h4>${Object.keys(ITEM_DATA).filter(n=>s.inventory.includes(n)).map(n=>{let d=ITEM_DATA[n],on=s.gear[d.slot]===n;return `<div class="item"><span><b>${n}</b><div class="rarity">${d.rarity} • ${d.slot} • ${d.desc}</div></span><button ${on?'disabled':''} onclick="equip('${n}')">${on?tr('equipped'):tr('equip')}</button></div>`}).join("")}`;
+ if(activeTab==="skills") c.innerHTML=`<h3>✨ ${tr('skills')} — Spellbook</h3><p class="small">Unlock 15 combat abilities as you level up. Each spell has its own cooldown.</p><div class="spellbook-banner"><span>✦ ARCANE ARCHIVE ✦</span><b>Choose your next devastation.</b><small>Current level: ${s.level} • ${RF_SKILLS.filter(x=>s.level>=x.unlock).length}/${RF_SKILLS.length} abilities unlocked</small></div><div class="spell-grid">${RF_SKILLS.map(skill=>{const unlocked=s.level>=skill.unlock,left=Math.max(0,Math.ceil((skillState(skill.id)-Date.now())/1000)),ready=unlocked&&left===0;return `<div class="spell-card ${unlocked?'spell-unlocked':'spell-locked'} ${skill.school.toLowerCase()}"><div class="spell-top"><div class="spell-icon">${skill.icon}</div><div class="spell-school">${skill.school}</div></div><b class="spell-name">${skill.name}</b><div class="spell-desc">${skill.desc}</div><div class="spell-bottom"><span>${unlocked?'⏱ '+skill.cd+'s cooldown':'🔒 Level '+skill.unlock}</span><button class="spell-cast" ${ready?'':'disabled'} onclick="useSkill('${skill.id}')">${!unlocked?'LOCKED':left>0?left+'s':'CAST ✦'}</button></div></div>`}).join('')}</div>`;
+ if(activeTab==="backpack") c.innerHTML=`<h3>🎒 ${tr('backpack')}</h3><p class="small">Your collected loot, gear, and consumables.</p><div class="inventory-summary"><div class="inventory-stat"><strong>🎒 ${s.inventory.length}</strong><span>${tr('items')} owned</span></div><div class="inventory-stat"><strong>🌶️ ${s.spicyPeppers||0}/10</strong><span>Ramen Shrine</span></div><div class="inventory-stat"><strong>🛡️ ${Object.values(s.gear||{}).filter(Boolean).length}/3</strong><span>Gear equipped</span></div></div>${s.inventory.length?s.inventory.map((n,i)=>{let d=ITEM_DATA[n],ramen=n==="Legendary Healing Ramen",potion=/potion/i.test(n),rarity=ramen?"legendary":d&&/legendary/i.test(d.rarity)?"legendary":d&&/epic/i.test(d.rarity)?"epic":d&&/rare/i.test(d.rarity)?"rare":"common";return `<div class="item inventory-item rarity-${rarity}"><span><b>${ramen?"🍜 ":potion?"🧪 ":d&&d.slot==="weapon"?"⚔️ ":d&&d.slot==="armor"?"🛡️ ":"📦 "}${n}</b><div class="rarity">${d?d.rarity+" • "+d.slot+" • "+d.desc:ramen?tr('ramenBonus'):potion?tr('restores'):tr('owned')}</div></span>${d?`<button onclick="equip('${n}')">${s.gear[d.slot]===n?"✓ "+tr('equipped'):tr('equip')}</button>`:ramen?`<button class="primary" onclick="useItem(${i})">Use 🍜</button>`:potion?`<button class="primary" onclick="useItem(${i})">Use 🧪</button>`:""}</div>`}).join(""):`<div class="empty-state"><div class="empty-icon">🧳</div><b>Your backpack is empty</b><p class="small">Defeat monsters to discover loot and supplies.</p></div>`}`;
+ if(activeTab==="character"){let need=s.level*100,xp=Math.max(0,s.xp||0);c.innerHTML=`<h3>🧙 ${tr('progression')}</h3><div class="item"><span>${tr('level')}</span><b>${s.level}</b></div><div class="item"><span>${tr('experience')}</span><b>${xp} / ${need} XP</b></div><div class="bar"><div class="fill" style="width:${Math.min(100,xp/need*100)}%"></div></div><div class="item"><span>${tr('basePower')}</span><b>${s.power}</b></div><div class="item"><span>${tr('totalPower')}</span><b>${power()}</b></div><div class="item"><span>${tr('maxHp')}</span><b>${maxPlayerHealth()}</b></div><p class="small">${tr('levelRule')}</p><h4>${tr('milestones')}</h4>${[2,4,7,10,15,22,25].map(l=>`<div class="item"><span>Level ${l}<div class="rarity">${({2:"Power Strike",4:"Arcane Burst",7:"Battle Fury",10:"Frost Nova",15:"Meteor",22:"Void Cleave",25:"Ramen Overlord shrine"})[l]}</div></span><b>${s.level>=l?"✅ "+tr('unlocked'):"🔒 "+tr('locked')}</b></div>`).join("")}`;}
+ if(activeTab==="achievements")renderAchievements(c);
+}
+
+function useItem(index){
+ const item=s.inventory[index];
+ if(item==="Legendary Healing Ramen") {s.inventory.splice(index,1);s.ramenBonus=(s.ramenBonus||0)+1;log("🍜 Legendary Healing Ramen used! Your next attack gains +100 power.");toast("🍜 +100 power on your next attack!");}
+ else if(/potion/i.test(item||"")){s.inventory.splice(index,1);const before=s.playerHp||100;s.playerHp=Math.min(maxPlayerHealth(),before+50);log("🧪 Health Potion used! HP: "+s.playerHp+" / "+maxPlayerHealth()+".");toast("🧪 Restored up to 50 HP!");}
+ else {toast("This item cannot be used yet.");return;} save();render();
+}
+function equip(name){const d=ITEM_DATA[name];if(!d||!s.inventory.includes(name)){toast("You don't own that equipment.");return;}const old=s.gear[d.slot];s.gear[d.slot]=name;s.equipped=equippedItems();if(old&&old!==name)log("🔁 "+old+" returned to your backpack.");log("🛡️ Equipped "+name+" in the "+d.slot+" slot.");toast(name+" equipped!");save();render();}
+function unequip(slot){const old=s.gear[slot];if(!old)return;s.gear[slot]=null;s.equipped=equippedItems();log("🎒 "+old+" unequipped and returned to your backpack.");toast(old+" unequipped.");save();render();}
+
+function cast(x){
+ if(x==="fireball"){attack(2.2);log("🔥 Fireball cast!")}
+ else {attack(1.7);log("🌪️ Whirlwind cast!")}
+}
+function openModal(html){$("modalBox").innerHTML=html;$("modal").classList.add("open")}
+function closeModal(){$("modal").classList.remove("open")}
+$("attackBtn").onclick=()=>attack();
+$("autoBtn").onclick=()=>{s.auto=!s.auto;render()};
+$("claimBtn").onclick=()=>{
+ let elapsed=Date.now()-s.lastReward;
+ let mins=Math.floor(elapsed/60000);
+ if(mins<5){toast("⏳ Idle reward is ready in "+(5-mins)+" min.");return}
+ let reward=Math.min(1000,50+Math.floor(mins/5)*25);
+ s.gold+=reward;s.lastReward=Date.now();toast("Idle reward: +"+reward+" gold");log("🎁 Claimed "+reward+" gold.");render();
+};
+$("accountBtn").onclick=()=>openModal(`<h2>👤 Realmforge Account</h2><p class="small">Local prototype account. Production version should use a secure server/database for cloud saves and unique names.</p><input id="nameInput" value="${s.name}" maxlength="24"><button class="primary" id="saveName">Save Player Name</button> <button id="close">Close</button><p class="small">Current player: <b>${s.name}</b></p>`);
+$("settingsBtn").onclick=()=>openModal(`<h2>⚙️ Settings</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+        <button id="settingsGeneralTab" class="primary">⚙️ General</button>
+        <button id="settingsFriendsTab">👥 Friends</button>
+      </div>
+      <div id="settingsContent">
+        <p>Auto battle: ${s.auto?"ON":"OFF"}</p>
+        <button id="toggleSet">${s.auto?"Turn OFF":"Turn ON"} Auto</button>
+        <button id="reset" class="danger">Reset Local Save</button>
+        <p class="small">Security note: production login, permissions and cloud saves must be server-side.</p>
+      </div>
+      <button id="close">Close</button>`);
+$("supportBtn").onclick=()=>openModal(`<h2>🐛 Contact Support</h2><p class="small">Send a bug report to the Realmforge team.</p><textarea id="bug" rows="5" placeholder="What happened?"></textarea><input id="device" placeholder="Device/browser (optional)"><button class="primary" id="sendBug">Send Report</button> <button id="close">Close</button>`);
+$("promoBtn").onclick=()=>openModal(`<h2>🎁 Promo Code</h2><input id="promo" placeholder="Enter code"><button class="primary" id="redeem">Redeem</button> <button id="close">Close</button><p class="small">Creator code: your chosen 10K code can be configured in the production backend.</p>`);
+$("languageSelect").addEventListener("change",e=>{s.lang=e.target.value;save();render();});
+document.addEventListener("click",e=>{
+ if(e.target.id==="close")closeModal();
+ if(e.target.id==="saveName"){
+   let n=$("nameInput").value.trim();
+   if(!n){toast("Name cannot be empty.");return}
+   s.name=n; closeModal(); render(); toast("Name saved locally.");
+ }
+ if(e.target.id==="toggleSet"){s.auto=!s.auto;closeModal();render()}
+ if(e.target.id==="settingsFriendsTab"){
+   const content=$("settingsContent");
+   if(content){
+     if(!s.friends) s.friends=[];
+     content.innerHTML=`<h3>👥 Friends</h3>
+       <p class="small">Add Realmforge players by username.</p>
+       <button id="addFriendFromSettings">➕ Add Friend</button>
+       <div style="margin-top:10px">${s.friends.length?s.friends.map(n=>`<div class="friend-row"><b>${n}</b><button data-remove-friend="${n.replace(/"/g,'&quot;')}">Remove</button></div>`).join(""):`<div class="muted">No friends yet.</div>`}</div>`;
+   }
+ }
+ if(e.target.id==="settingsGeneralTab"){
+   const content=$("settingsContent");
+   if(content) content.innerHTML=`<p>Auto battle: ${s.auto?"ON":"OFF"}</p><button id="toggleSet">${s.auto?"Turn OFF":"Turn ON"} Auto</button><button id="reset" class="danger">Reset Local Save</button><p class="small">Security note: production login, permissions and cloud saves must be server-side.</p>`;
+ }
+ if(e.target.id==="addFriendFromSettings"){ addFriend(); }
+ if(e.target.dataset.removeFriend){
+   removeFriend(e.target.dataset.removeFriend);
+   $("settingsFriendsTab").click();
+ }
+ if(e.target.id==="reset"){if(confirm("Reset your local Realmforge save?")){localStorage.removeItem(KEY);location.reload()}}
+ if(e.target.id==="sendBug"){let text=$("bug").value.trim();if(!text){toast("Describe the bug first.");return}closeModal();toast("Bug report created!");log("📩 Support report saved locally for this prototype.")}
+ if(e.target.id==="redeem"){
+   let code=$("promo").value.trim().toLowerCase();
+   if(code==="neitanasgrinius10k"&&!s.claimedPromo.includes(code)){s.gold+=10000;s.claimedPromo.push(code);closeModal();toast("+10,000 gold! 👑");log("👑 Creator promo redeemed: +10,000 gold.");render()}
+   else if(s.claimedPromo.includes(code))toast("That promo was already used.");
+   else toast("Invalid promo code.");
+ }
+ if(e.target.dataset.tab)renderTab(e.target.dataset.tab);
+ if(e.target.dataset.adminAction)runAdminAction(e.target.dataset.adminAction);
+});
+setInterval(()=>{if(s.auto)attack(.55)},2200);
+setInterval(()=>save(),5000);
+enemySetup();render();log("🌟 Welcome to Realmforge, "+s.name+"!");log("💾 Prototype save enabled on this device.");
+</script>
+
+<div id="friendsTab" style="max-width:900px;margin:14px auto;"></div>
+<div id="adminTab" style="max-width:900px;margin:14px auto;"></div>
+<div class="panel" style="max-width:900px;margin:14px auto">
+  <h3>⚡ Neon Overlord</h3>
+  <div class="small">Level 40 • 15,000 HP • 180 base damage • 120 defense • 3 phases • 15% Neon Armor drop</div>
+  <div class="small" style="margin-top:6px">Unlocked by defeating the Ramen Overlord.</div>
+</div>
+</body>
+</html>
